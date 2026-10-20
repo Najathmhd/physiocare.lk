@@ -3,23 +3,39 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev --turbopack",
+    "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "seed": "node scripts/seed.js",
+    "test-db": "node scripts/test-connection.js",
+    "check-db": "node scripts/check-db.js"
   },
   "dependencies": {
+    "@types/mongoose": "^5.11.96",
+    "animate.css": "^4.1.1",
+    "aos": "^2.3.4",
+    "bcryptjs": "^3.0.2",
+    "bootstrap": "^5.3.7",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.16.1",
+    "next": "15.3.4",
+    "nodemailer": "^7.0.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "next": "15.3.4"
+    "react-toastify": "^11.0.5"
   },
   "devDependencies": {
-    "typescript": "^5",
+    "@eslint/eslintrc": "^3",
+    "@types/aos": "^3.0.7",
+    "@types/bcryptjs": "^2.4.6",
+    "@types/jsonwebtoken": "^9.0.10",
     "@types/node": "^20",
+    "@types/nodemailer": "^6.4.17",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
-    "@eslint/eslintrc": "^3"
+    "typescript": "^5"
   }
 }
