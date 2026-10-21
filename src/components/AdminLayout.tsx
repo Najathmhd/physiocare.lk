@@ -33,7 +33,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
     fetch('/api/settings')
       .then(r => r.ok ? r.json() : null)
       .then(d => d && setSettings(d))
-      .catch(() => {});
+      .catch(() => { });
   }, [isAuthenticated]);
 
   // Close dropdown when clicking outside
@@ -59,12 +59,12 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
   };
 
   const navItems = [
-    { href: '/admin/dashboard',    icon: 'fas fa-chart-pie',      label: 'Dashboard' },
+    { href: '/admin/dashboard', icon: 'fas fa-chart-pie', label: 'Dashboard' },
     { href: '/admin/appointments', icon: 'fas fa-calendar-check', label: 'Appointments' },
-    { href: '/admin/patients',     icon: 'fas fa-users',          label: 'Patients' },
-    { href: '/admin/staff',        icon: 'fas fa-user-md',        label: 'Staff' },
-    { href: '/admin/services',     icon: 'fas fa-stethoscope',    label: 'Services' },
-    { href: '/admin/settings',     icon: 'fas fa-cog',            label: 'Settings' },
+    { href: '/admin/patients', icon: 'fas fa-users', label: 'Patients' },
+    { href: '/admin/staff', icon: 'fas fa-user-md', label: 'Staff' },
+    { href: '/admin/services', icon: 'fas fa-stethoscope', label: 'Services' },
+    { href: '/admin/settings', icon: 'fas fa-cog', label: 'Settings' },
   ];
 
   if (pathname === '/admin/login') return <>{children}</>;
@@ -137,7 +137,7 @@ export default function AdminLayout({ children }: AdminLayoutProps) {
             <Link
               key={item.href}
               href={item.href}
-              className={`admin-nav-link ${pathname === item.href || pathname.startsWith(item.href + '/') ? 'active' : ''}`}
+              className={`admin-nav-link ${pathname && (pathname === item.href || pathname.startsWith(item.href + '/')) ? 'active' : ''}`}
               onClick={() => setIsSidebarOpen(false)}
             >
               <i className={item.icon}></i>
