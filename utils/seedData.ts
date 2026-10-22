@@ -43,7 +43,7 @@ export async function seedDatabase() {
     ]);
 
     // Create Admin User for authentication
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const hashedPassword = await bcrypt.hash('admin560', 10);
     await User.create({
       name: 'Physio Care Admin',
       email: 'azrinphysiocare@gmail.com',

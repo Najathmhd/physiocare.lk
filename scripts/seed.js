@@ -140,7 +140,7 @@ async function seedDatabase() {
     console.log('Seeded services');
 
     // Seed Staff
-    const hashedPassword = await bcrypt.hash('admin123', 10);
+    const hashedPassword = await bcrypt.hash('admin560', 10);
     const staff = await StaffModel.insertMany([
       {
         name: 'Dr. Sarah Johnson',

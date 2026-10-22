@@ -6,7 +6,7 @@ import dbConnect from './db';
 const seedAdmin = async () => {
   await dbConnect();
   const adminEmail = 'azrinphysiocare@gmail.com';
-  const adminPassword = 'admin123';
+  const adminPassword = 'admin560';
   const adminName = 'Physio Care Admin';
   const existing = await User.findOne({ email: adminEmail });
   if (!existing) {

@@ -3,7 +3,7 @@ import dbConnect from '../../../utils/db';
 import Appointment from '../../../models/Appointment';
 import Settings from '../../../models/Settings';
 import Service from '../../../models/Service';
-import { sendAppointmentConfirmation, sendPaymentConfirmationEmail } from '../../../src/utils/emailService';
+import { sendAppointmentConfirmation, sendAdminNewBookingAlert, sendPaymentConfirmationEmail } from '../../../src/utils/emailService';
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   await dbConnect();
@@ -21,6 +21,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'POST') {
     try {
       const apptData = { ...req.body };
+
+      // Ensure address is captured if embedded in notes
+      if (!apptData.address && apptData.notes && apptData.notes.includes('Visit Address:')) {
+        apptData.address = apptData.notes.split('Visit Address:')[1]?.split('\n')[0]?.trim();
+      }
 
       // Validate appointment date is not in the past
       if (apptData.date) {
@@ -50,16 +55,19 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
       const appt = await Appointment.create(apptData);
 
-      // Send confirmation email
+      // Send confirmation & admin alert emails
       try {
         const settings = await Settings.findOne();
         const clinicName = settings?.clinicName || 'Physio Care';
         const clinicPhone = settings?.clinicPhone || '+94 77 337 8718';
         const clinicAddress = settings?.clinicAddress || '49, Masjid Mawatha, Warakapola, Sri Lanka';
+        const adminEmail = settings?.clinicEmail || process.env.EMAIL_USER || 'azrinphysiocare@gmail.com';
 
+        // 1. Send confirmation to Patient (tailored for Clinic Visit vs. Home Visit)
         await sendAppointmentConfirmation({
           patientName: appt.patientName,
           patientEmail: appt.email,
+          patientPhone: appt.phone,
           service: appt.service,
           date: appt.date,
           time: appt.time,
@@ -68,9 +76,32 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           paymentAmount: appt.paymentAmount || 0,
           paymentMethod: appt.paymentMethod || 'cash',
           receiptNumber: appt.receiptNumber,
+          address: appt.address,
+          notes: appt.notes,
           clinicName,
           clinicPhone,
           clinicAddress,
+        });
+
+        // 2. Instantly notify Clinic / Admin of the new booking
+        await sendAdminNewBookingAlert({
+          patientName: appt.patientName,
+          patientEmail: appt.email,
+          patientPhone: appt.phone,
+          service: appt.service,
+          date: appt.date,
+          time: appt.time,
+          status: appt.status || 'pending',
+          paymentStatus: appt.paymentStatus || 'unpaid',
+          paymentAmount: appt.paymentAmount || 0,
+          paymentMethod: appt.paymentMethod || 'cash',
+          receiptNumber: appt.receiptNumber,
+          address: appt.address,
+          notes: appt.notes,
+          clinicName,
+          clinicPhone,
+          clinicAddress,
+          adminEmail,
         });
 
         if (appt.paymentStatus === 'paid') {

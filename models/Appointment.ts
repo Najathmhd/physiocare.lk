@@ -13,6 +13,7 @@ export interface IAppointment extends Document {
   paymentMethod?: "cash" | "card" | "bank_transfer" | "online" | "insurance";
   paidAt?: Date;
   receiptNumber?: string;
+  address?: string;
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -44,6 +45,7 @@ const AppointmentSchema: Schema = new Schema(
     },
     paidAt: { type: Date },
     receiptNumber: { type: String },
+    address: { type: String },
     notes: { type: String },
   },
   { timestamps: true }

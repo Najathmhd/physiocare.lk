@@ -158,6 +158,7 @@ export default function Home() {
       phone:         fd.get('phone') as string,
       service:       (fd.get('service') as string) || selectedService,
       paymentAmount: Number(matchedService?.price || 0),
+      address:       address,
       date:          fd.get('date') as string,
       time:          fd.get('time') as string,
       notes:         finalNotes,
@@ -439,7 +440,7 @@ export default function Home() {
               <div className="row g-3">
                 {[
                   { icon: 'fas fa-user-check', color: '#0b6870', bg: '#e8f5f6', val: '500+', lbl: 'Treated Patients' },
-                  { icon: 'fas fa-award',      color: '#16a34a', bg: '#f0fdf4', val: '10+',  lbl: 'Years Experience' },
+                  { icon: 'fas fa-award',      color: '#16a34a', bg: '#f0fdf4', val: '01+',  lbl: 'Years Experience' },
                   { icon: 'fas fa-user-md',    color: '#0284c7', bg: '#f0f9ff', val: '100%', lbl: 'Licensed Specialists' },
                   { icon: 'fas fa-heart',      color: '#dc2626', bg: '#fef2f2', val: '98%',  lbl: 'Patient Satisfaction' },
                 ].map(st => (

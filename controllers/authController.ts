@@ -21,8 +21,8 @@ export default async function loginHandler(req: NextApiRequest, res: NextApiResp
   // If no user exists in the database, seed default admin on initial login
   if (!user) {
     const totalUsers = await User.countDocuments();
-    if (totalUsers === 0 && email.toLowerCase().trim() === 'azrinphysiocare@gmail.com' && password === 'admin123') {
-      const hashedPassword = await bcrypt.hash('admin123', 10);
+    if (totalUsers === 0 && email.toLowerCase().trim() === 'azrinphysiocare@gmail.com' && password === 'admin560') {
+      const hashedPassword = await bcrypt.hash('admin560', 10);
       user = await User.create({
         name: 'Physio Care Admin',
         email: 'azrinphysiocare@gmail.com',
