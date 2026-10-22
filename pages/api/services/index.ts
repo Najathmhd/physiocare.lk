@@ -8,7 +8,8 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (req.method === 'GET') {
     // List all services
     try {
-      const services = await Service.find().sort({ createdAt: -1 });
+      res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
+      const services = await Service.find().sort({ createdAt: 1 });
       return res.status(200).json(services);
     } catch (error: any) {
       console.error('Error fetching services:', error);

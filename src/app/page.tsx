@@ -28,27 +28,114 @@ export default function Home() {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [settingsRes, servicesRes] = await Promise.all([
-          fetch('/api/settings'),
-          fetch('/api/services'),
-        ]);
-        if (settingsRes.ok) setSettings(await settingsRes.json());
-        if (servicesRes.ok) {
-          const sData = await servicesRes.json();
-          if (Array.isArray(sData) && sData.length > 0) {
-            setServices(sData.filter((s: any) => s.isActive !== false));
-          }
+  const fallbackServices = [
+    {
+      _id: 'default-clinic',
+      name: 'Clinic Visit',
+      subtitle: 'Warakapola Center',
+      category: 'Clinic Consultation',
+      price: 1500,
+      duration: 45,
+      description: 'Comprehensive clinical consultation and hands-on physiotherapy rehabilitation utilizing specialized clinic apparatus, mobility tools, and guided therapeutic exercises.',
+      image: '/images/services/physical-therapy.jpg',
+      badge: 'In-Clinic Care',
+      badgeClass: 'visit-badge-clinic',
+      icon: 'fas fa-clinic-medical',
+      color: '#0b6870',
+      btnClass: 'btn-primary',
+      features: [
+        { label: 'Complete Clinical Evaluation', text: 'In-depth musculoskeletal assessment and joint mobility testing.' },
+        { label: 'Advanced Therapy Equipment', text: 'Full access to resistance bands, traction apparatus, and clinical gym.' },
+        { label: 'Targeted Mobilization', text: 'Hands-on joint manipulation, pain relief modalities, and posture realignment.' },
+        { label: 'Private & Sanitized Environment', text: 'Strict hygiene, air filtration, and sterile treatment rooms.' }
+      ]
+    },
+    {
+      _id: 'default-home',
+      name: 'Home Visit',
+      subtitle: 'At Patient Residence',
+      category: 'Bedside & Home Care',
+      price: 3000,
+      duration: 60,
+      description: 'Compassionate, one-on-one bedside physiotherapy administered directly at your home. Ideal for post-operative individuals, bedridden patients, and elderly mobility recovery.',
+      image: '/images/clinical-care.jpg',
+      badge: 'Bedside & Home Care',
+      badgeClass: 'visit-badge-home',
+      icon: 'fas fa-home',
+      color: '#16a34a',
+      btnClass: 'btn-success',
+      features: [
+        { label: 'Zero Travel Stress', text: 'Safe, comfortable recovery in your personal home environment without difficult travel.' },
+        { label: 'Bedside & Post-Surgical Rehab', text: 'Gentle limb mobilization, wound-safe movement, and circulation support.' },
+        { label: 'Geriatric Mobility & Gait', text: 'Safe transfer training, balance restoration, and fall prevention.' },
+        { label: 'Caregiver Instruction', text: 'Practical training for family members on safe positioning and assisted movement.' }
+      ]
+    }
+  ];
+
+  const activeServices = (services && services.length > 0)
+    ? services.map((svc: any) => {
+        const isHome = (svc.name || '').toLowerCase().includes('home');
+        return {
+          ...svc,
+          subtitle: isHome ? 'At Patient Residence' : 'Warakapola Center',
+          badge: isHome ? 'Bedside & Home Care' : 'In-Clinic Care',
+          badgeClass: isHome ? 'visit-badge-home' : 'visit-badge-clinic',
+          icon: isHome ? 'fas fa-home' : 'fas fa-clinic-medical',
+          color: isHome ? '#16a34a' : '#0b6870',
+          btnClass: isHome ? 'btn-success' : 'btn-primary',
+          image: svc.image || (isHome ? '/images/clinical-care.jpg' : '/images/services/physical-therapy.jpg'),
+          features: isHome ? [
+            { label: 'Zero Travel Stress', text: 'Safe, comfortable recovery in your personal home environment without difficult travel.' },
+            { label: 'Bedside & Post-Surgical Rehab', text: 'Gentle limb mobilization, wound-safe movement, and circulation support.' },
+            { label: 'Geriatric Mobility & Gait', text: 'Safe transfer training, balance restoration, and fall prevention.' },
+            { label: 'Caregiver Instruction', text: 'Practical training for family members on safe positioning and assisted movement.' }
+          ] : [
+            { label: 'Complete Clinical Evaluation', text: 'In-depth musculoskeletal assessment and joint mobility testing.' },
+            { label: 'Advanced Therapy Equipment', text: 'Full access to resistance bands, traction apparatus, and clinical gym.' },
+            { label: 'Targeted Mobilization', text: 'Hands-on joint manipulation, pain relief modalities, and posture realignment.' },
+            { label: 'Private & Sanitized Environment', text: 'Strict hygiene, air filtration, and sterile treatment rooms.' }
+          ]
+        };
+      })
+    : fallbackServices;
+
+  const fetchData = async () => {
+    try {
+      const [settingsRes, servicesRes] = await Promise.all([
+        fetch('/api/settings', { cache: 'no-store' }),
+        fetch('/api/services', { cache: 'no-store' }),
+      ]);
+      if (settingsRes.ok) setSettings(await settingsRes.json());
+      if (servicesRes.ok) {
+        const sData = await servicesRes.json();
+        if (Array.isArray(sData) && sData.length > 0) {
+          setServices(sData.filter((s: any) => s.isActive !== false));
         }
-      } catch {
-        /* ignore */
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch {
+      /* ignore */
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchData();
+
+    // Re-fetch on window focus to ensure updates from admin tab appear immediately
+    const handleFocus = () => {
+      fetchData();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    // Auto-polling interval every 12 seconds
+    const interval = setInterval(fetchData, 12000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
+    };
   }, []);
 
   const handleAppointmentSubmit = async (e: React.FormEvent) => {
@@ -63,14 +150,17 @@ export default function Home() {
       ? `Visit Address: ${address}\n\nNotes: ${rawNotes}`.trim()
       : rawNotes;
 
+    const matchedService = activeServices.find((s: any) => s.name === selectedService);
+
     const data = {
-      patientName: fd.get('name') as string,
-      email:       fd.get('email') as string,
-      phone:       fd.get('phone') as string,
-      service:     (fd.get('service') as string) || selectedService,
-      date:        fd.get('date') as string,
-      time:        fd.get('time') as string,
-      notes:       finalNotes,
+      patientName:   fd.get('name') as string,
+      email:         fd.get('email') as string,
+      phone:         fd.get('phone') as string,
+      service:       (fd.get('service') as string) || selectedService,
+      paymentAmount: Number(matchedService?.price || 0),
+      date:          fd.get('date') as string,
+      time:          fd.get('time') as string,
+      notes:         finalNotes,
     };
     try {
       const res = await fetch('/api/appointments', {
@@ -243,127 +333,66 @@ export default function Home() {
           </div>
 
           <div className="row g-4 justify-content-center">
-            {/* OPTION 1: CLINIC VISIT */}
-            <div className="col-lg-6">
-              <div className="visit-option-card">
-                <div className="visit-option-img-wrap">
-                  <img
-                    src="/images/services/physical-therapy.jpg"
-                    alt="In-Clinic Physiotherapy Care at Physio Care"
-                  />
-                  <span className="visit-badge-pill visit-badge-clinic">
-                    <i className="fas fa-clinic-medical"></i> In-Clinic Care
-                  </span>
-                </div>
-                <div className="visit-option-body">
-                  <div className="visit-option-header">
-                    <div>
-                      <h3 className="visit-option-title">Clinic Visit</h3>
-                      <small style={{ color: '#0b6870', fontWeight: 600 }}>Warakapola Center</small>
-                    </div>
-                    <div className="visit-option-price-tag">
-                      <div className="visit-option-price">LKR 3,500</div>
-                      <span className="visit-option-duration"><i className="far fa-clock"></i> 45 Minutes Session</span>
-                    </div>
+            {activeServices.map((svc: any) => (
+              <div key={svc._id || svc.name} className="col-lg-6">
+                <div className="visit-option-card">
+                  <div className="visit-option-img-wrap">
+                    <img
+                      src={svc.image}
+                      alt={`${svc.name} at ${clinicName}`}
+                    />
+                    <span className={`visit-badge-pill ${svc.badgeClass}`}>
+                      <i className={svc.icon}></i> {svc.badge}
+                    </span>
                   </div>
-
-                  <p className="visit-option-desc">
-                    Comprehensive clinical consultation and hands-on physiotherapy rehabilitation utilizing specialized clinic apparatus, mobility tools, and guided therapeutic exercises.
-                  </p>
-
-                  <ul className="visit-checklist">
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#0b6870' }}></i>
-                      <span><strong>Complete Clinical Evaluation:</strong> In-depth musculoskeletal assessment and joint mobility testing.</span>
-                    </li>
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#0b6870' }}></i>
-                      <span><strong>Advanced Therapy Equipment:</strong> Full access to resistance bands, traction apparatus, and clinical gym.</span>
-                    </li>
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#0b6870' }}></i>
-                      <span><strong>Targeted Mobilization:</strong> Hands-on joint manipulation, pain relief modalities, and posture realignment.</span>
-                    </li>
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#0b6870' }}></i>
-                      <span><strong>Private &amp; Sanitized Environment:</strong> Strict hygiene, air filtration, and sterile treatment rooms.</span>
-                    </li>
-                  </ul>
-
-                  <div className="visit-option-footer">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectVisitOption('Clinic Visit')}
-                      className="btn btn-primary w-100"
-                      style={{ padding: '12px 20px', borderRadius: '10px', fontWeight: 700 }}
-                    >
-                      <i className="fas fa-calendar-check me-2"></i> Book Clinic Visit
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* OPTION 2: HOME VISIT */}
-            <div className="col-lg-6">
-              <div className="visit-option-card">
-                <div className="visit-option-img-wrap">
-                  <img
-                    src="/images/clinical-care.jpg"
-                    alt="Bedside and Home Physiotherapy Care by Physio Care"
-                  />
-                  <span className="visit-badge-pill visit-badge-home">
-                    <i className="fas fa-home"></i> Bedside &amp; Home Care
-                  </span>
-                </div>
-                <div className="visit-option-body">
-                  <div className="visit-option-header">
-                    <div>
-                      <h3 className="visit-option-title">Home Visit</h3>
-                      <small style={{ color: '#16a34a', fontWeight: 600 }}>At Patient Residence</small>
+                  <div className="visit-option-body">
+                    <div className="visit-option-header">
+                      <div>
+                        <h3 className="visit-option-title">{svc.name}</h3>
+                        <small style={{ color: svc.color, fontWeight: 600 }}>{svc.subtitle}</small>
+                      </div>
+                      <div className="visit-option-price-tag">
+                        <div className="visit-option-price" style={{ color: svc.color }}>
+                          LKR {Number(svc.price || 0).toLocaleString()}
+                        </div>
+                        <span className="visit-option-duration">
+                          <i className="far fa-clock"></i> {svc.duration} Minutes Session
+                        </span>
+                      </div>
                     </div>
-                    <div className="visit-option-price-tag">
-                      <div className="visit-option-price" style={{ color: '#16a34a' }}>LKR 5,000</div>
-                      <span className="visit-option-duration"><i className="far fa-clock"></i> 60 Minutes Session</span>
+
+                    <p className="visit-option-desc">
+                      {svc.description}
+                    </p>
+
+                    <ul className="visit-checklist">
+                      {svc.features.map((feat: any, idx: number) => (
+                        <li key={idx} className="visit-check-item">
+                          <i className="fas fa-check-circle" style={{ color: svc.color }}></i>
+                          <span><strong>{feat.label}:</strong> {feat.text}</span>
+                        </li>
+                      ))}
+                    </ul>
+
+                    <div className="visit-option-footer">
+                      <button
+                        type="button"
+                        onClick={() => handleSelectVisitOption(svc.name)}
+                        className={`btn ${svc.btnClass} w-100`}
+                        style={{
+                          padding: '12px 20px',
+                          borderRadius: '10px',
+                          fontWeight: 700,
+                          ...(svc.btnClass === 'btn-success' ? { background: '#16a34a', borderColor: '#16a34a' } : {})
+                        }}
+                      >
+                        <i className={`${svc.icon} me-2`}></i> Book {svc.name}
+                      </button>
                     </div>
-                  </div>
-
-                  <p className="visit-option-desc">
-                    Compassionate, one-on-one bedside physiotherapy administered directly at your home. Ideal for post-operative individuals, bedridden patients, and elderly mobility recovery.
-                  </p>
-
-                  <ul className="visit-checklist">
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#16a34a' }}></i>
-                      <span><strong>Zero Travel Stress:</strong> Safe, comfortable recovery in your personal home environment without difficult travel.</span>
-                    </li>
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#16a34a' }}></i>
-                      <span><strong>Bedside &amp; Post-Surgical Rehab:</strong> Gentle limb mobilization, wound-safe movement, and circulation support.</span>
-                    </li>
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#16a34a' }}></i>
-                      <span><strong>Geriatric Mobility &amp; Gait:</strong> Safe transfer training, balance restoration, and fall prevention.</span>
-                    </li>
-                    <li className="visit-check-item">
-                      <i className="fas fa-check-circle" style={{ color: '#16a34a' }}></i>
-                      <span><strong>Caregiver Instruction:</strong> Practical training for family members on safe positioning and assisted movement.</span>
-                    </li>
-                  </ul>
-
-                  <div className="visit-option-footer">
-                    <button
-                      type="button"
-                      onClick={() => handleSelectVisitOption('Home Visit')}
-                      className="btn btn-success w-100"
-                      style={{ padding: '12px 20px', borderRadius: '10px', fontWeight: 700, background: '#16a34a', borderColor: '#16a34a' }}
-                    >
-                      <i className="fas fa-home me-2"></i> Book Home Visit
-                    </button>
                   </div>
                 </div>
               </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
@@ -465,56 +494,40 @@ export default function Home() {
                 <div className="col-12">
                   <label className="form-label" style={{ fontWeight: 700 }}>Choose Care Option *</label>
                   <div className="row g-2">
-                    <div className="col-sm-6">
-                      <div
-                        onClick={() => setSelectedService('Clinic Visit')}
-                        style={{
-                          cursor: 'pointer',
-                          padding: '14px 16px',
-                          borderRadius: '10px',
-                          border: selectedService === 'Clinic Visit' ? '2px solid #0b6870' : '1.5px solid #cbd5e1',
-                          background: selectedService === 'Clinic Visit' ? '#e8f5f6' : '#fff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          boxShadow: selectedService === 'Clinic Visit' ? '0 0 0 1px #0b6870' : 'none',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <i className="fas fa-clinic-medical" style={{ color: '#0b6870', fontSize: '1.25rem' }}></i>
-                          <div>
-                            <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>Clinic Visit</div>
-                            <small style={{ color: '#64748b' }}>Warakapola Center • 45 mins</small>
+                    {activeServices.map((svc: any) => {
+                      const isSelected = selectedService === svc.name;
+                      const bgSelected = svc.color === '#16a34a' ? '#f0fdf4' : '#e8f5f6';
+                      return (
+                        <div key={svc._id || svc.name} className="col-sm-6">
+                          <div
+                            onClick={() => setSelectedService(svc.name)}
+                            style={{
+                              cursor: 'pointer',
+                              padding: '14px 16px',
+                              borderRadius: '10px',
+                              border: isSelected ? `2px solid ${svc.color}` : '1.5px solid #cbd5e1',
+                              background: isSelected ? bgSelected : '#fff',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              boxShadow: isSelected ? `0 0 0 1px ${svc.color}` : 'none',
+                              transition: 'all 0.2s ease',
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                              <i className={svc.icon} style={{ color: svc.color, fontSize: '1.25rem' }}></i>
+                              <div>
+                                <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>{svc.name}</div>
+                                <small style={{ color: '#64748b' }}>{svc.subtitle} • {svc.duration} mins</small>
+                              </div>
+                            </div>
+                            <span style={{ fontWeight: 800, color: svc.color, fontSize: '0.95rem' }}>
+                              LKR {Number(svc.price || 0).toLocaleString()}
+                            </span>
                           </div>
                         </div>
-                        <span style={{ fontWeight: 800, color: '#0b6870', fontSize: '0.95rem' }}>LKR 3,500</span>
-                      </div>
-                    </div>
-                    <div className="col-sm-6">
-                      <div
-                        onClick={() => setSelectedService('Home Visit')}
-                        style={{
-                          cursor: 'pointer',
-                          padding: '14px 16px',
-                          borderRadius: '10px',
-                          border: selectedService === 'Home Visit' ? '2px solid #16a34a' : '1.5px solid #cbd5e1',
-                          background: selectedService === 'Home Visit' ? '#f0fdf4' : '#fff',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          boxShadow: selectedService === 'Home Visit' ? '0 0 0 1px #16a34a' : 'none',
-                        }}
-                      >
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                          <i className="fas fa-home" style={{ color: '#16a34a', fontSize: '1.25rem' }}></i>
-                          <div>
-                            <div style={{ fontWeight: 700, color: '#0f172a', fontSize: '0.95rem' }}>Home Visit</div>
-                            <small style={{ color: '#64748b' }}>Bedside at Home • 60 mins</small>
-                          </div>
-                        </div>
-                        <span style={{ fontWeight: 800, color: '#16a34a', fontSize: '0.95rem' }}>LKR 5,000</span>
-                      </div>
-                    </div>
+                      );
+                    })}
                   </div>
                   <input type="hidden" name="service" value={selectedService} />
                 </div>
@@ -584,7 +597,7 @@ export default function Home() {
                 </div>
 
                 {/* Conditional Address Field for Home Visit */}
-                {selectedService === 'Home Visit' && (
+                {(selectedService || '').toLowerCase().includes('home') && (
                   <div className="col-12">
                     <label className="form-label" style={{ fontWeight: 700, color: '#16a34a' }}>
                       <i className="fas fa-map-marker-alt me-1"></i> Home Visit Address / Residence Location *

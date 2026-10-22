@@ -6,6 +6,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   await dbConnect();
   
   if (req.method === 'GET') {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     // Get settings (create default if none exist)
     let settings = await Settings.findOne();
     if (!settings) {
