@@ -61,6 +61,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         const clinicName = settings?.clinicName || 'Physio Care';
         const clinicPhone = settings?.clinicPhone || '+94 77 337 8718';
         const clinicAddress = settings?.clinicAddress || '49, Masjid Mawatha, Warakapola, Sri Lanka';
+        const clinicWebsite = settings?.clinicWebsite || '';
         const adminEmail = settings?.clinicEmail || process.env.EMAIL_USER || 'azrinphysiocare@gmail.com';
 
         // 1. Send confirmation to Patient (tailored for Clinic Visit vs. Home Visit)
@@ -81,6 +82,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           clinicName,
           clinicPhone,
           clinicAddress,
+          clinicWebsite,
         });
 
         // 2. Instantly notify Clinic / Admin of the new booking
@@ -101,6 +103,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           clinicName,
           clinicPhone,
           clinicAddress,
+          clinicWebsite,
           adminEmail,
         });
 

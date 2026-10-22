@@ -53,6 +53,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const clinicName = settings?.clinicName || 'Physio Care';
       const clinicPhone = settings?.clinicPhone || '+94 77 337 8718';
       const clinicAddress = settings?.clinicAddress || '49, Masjid Mawatha, Warakapola, Sri Lanka';
+      const clinicWebsite = settings?.clinicWebsite || '';
 
       // 1. Send Payment Confirmation Email
       if (shouldSendPaymentEmail || req.body.sendPaymentReceipt) {
@@ -70,6 +71,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             clinicName,
             clinicPhone,
             clinicAddress,
+            clinicWebsite,
           });
         } catch (payEmailErr) {
           console.error('Error sending payment receipt email:', payEmailErr);
@@ -90,6 +92,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             clinicName,
             clinicPhone,
             clinicAddress,
+            clinicWebsite,
           });
         } catch (statusEmailErr) {
           console.error('Error sending status update email:', statusEmailErr);

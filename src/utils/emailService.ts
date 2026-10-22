@@ -32,6 +32,7 @@ export interface AppointmentEmailData {
   clinicName: string;
   clinicPhone: string;
   clinicAddress: string;
+  clinicWebsite?: string;
   adminEmail?: string;
 }
 
@@ -48,6 +49,7 @@ export interface PaymentEmailData {
   clinicName: string;
   clinicPhone: string;
   clinicAddress: string;
+  clinicWebsite?: string;
 }
 
 const formatLKR = (amount: number | string = 0) => {
@@ -253,6 +255,17 @@ export async function sendAdminNewBookingAlert(data: AppointmentEmailData) {
     const isHomeVisit = (data.service || '').toLowerCase().includes('home');
     const adminRecipient = data.adminEmail || EMAIL_USER;
 
+    // Dynamically resolve staff portal URL from settings
+    let baseUrl = (data.clinicWebsite || '').trim();
+    if (!baseUrl) {
+      baseUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://physiocare-one.vercel.app';
+    }
+    baseUrl = baseUrl.replace(/\/+$/, '');
+    if (!baseUrl.startsWith('http://') && !baseUrl.startsWith('https://')) {
+      baseUrl = `https://${baseUrl}`;
+    }
+    const adminPortalUrl = `${baseUrl}/admin/appointments`;
+
     const mailOptions = {
       from: `"${data.clinicName} Booking System" <${EMAIL_USER}>`,
       to: adminRecipient,
@@ -357,7 +370,7 @@ export async function sendAdminNewBookingAlert(data: AppointmentEmailData) {
                       ` : ''}
 
                       <div style="text-align: center; margin-top: 26px;">
-                        <a href="https://physiocare.lk/admin/appointments" style="display: inline-block; background-color: #0c6f78; color: #ffffff; padding: 14px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;">
+                        <a href="${adminPortalUrl}" style="display: inline-block; background-color: #0c6f78; color: #ffffff; padding: 14px 28px; border-radius: 8px; font-size: 14px; font-weight: 700; text-decoration: none;">
                           Open Staff Portal to Confirm Appointment
                         </a>
                       </div>
